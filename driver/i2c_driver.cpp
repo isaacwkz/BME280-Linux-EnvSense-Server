@@ -3,17 +3,13 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <stdint.h>
-#include <string>
 #include <cstring>
 #include <iostream>
 #include "i2c_driver.h"
 
 int i2c::openDev(uint8_t devNumber) {
 	i2cFilePath += std::to_string(devNumber);
-	// std::cout << "Opening " << i2cDevPath << std::endl;
 	int fd = open(i2cFilePath.c_str(), O_RDWR);
-	// std::cout << "I2C FD: " << fd << std::endl;
 	if (fd <= 0) {
 		int error = errno;
 		std::cout << "Unable to open I2C device " << strerror(error) << std::endl;
@@ -27,6 +23,8 @@ int i2c::openDev(uint8_t devNumber) {
 void i2c::closeDev() { close(i2cDevice); }
 
 int i2c::writeByte(uint8_t i2caddr, uint8_t regaddr, uint8_t value) {
+	std::lock_guard<std::mutex> lock(i2c_mutex);
+
 	if (ioctl(i2cDevice, I2C_SLAVE, i2caddr) < 0) {
 		// std::cout << "Setting I2C address failed" << std::endl;
 		return errno;
@@ -40,6 +38,8 @@ int i2c::writeByte(uint8_t i2caddr, uint8_t regaddr, uint8_t value) {
 }
 
 int i2c::writeBytes(uint8_t i2caddr, uint8_t regaddr, uint32_t count, const uint8_t *value) {
+	std::lock_guard<std::mutex> lock(i2c_mutex);
+
 	if (ioctl(i2cDevice, I2C_SLAVE, i2caddr) < 0) {
 		std::cout << "Setting I2C address failed" << std::endl;
 		return errno;
@@ -56,6 +56,8 @@ int i2c::writeBytes(uint8_t i2caddr, uint8_t regaddr, uint32_t count, const uint
 }
 
 int i2c::readByte(uint8_t i2caddr, uint8_t regaddr, uint8_t *buf) {
+	std::lock_guard<std::mutex> lock(i2c_mutex);
+
 	int32_t        res    = 0;
 	uint8_t        buffer = 0;
 	struct i2c_msg msg[2] = {
@@ -85,6 +87,8 @@ int i2c::readByte(uint8_t i2caddr, uint8_t regaddr, uint8_t *buf) {
 }
 
 int i2c::readBytes(uint8_t i2caddr, uint8_t regaddr, uint16_t count, uint8_t *buffer) {
+	std::lock_guard<std::mutex> lock(i2c_mutex);
+
 	int32_t        res    = 0;
 	struct i2c_msg msg[2] = {
 		{

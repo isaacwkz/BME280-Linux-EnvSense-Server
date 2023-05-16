@@ -1,5 +1,5 @@
-#ifndef BME280_WRAPPER_H
-#define BME280_WRAPPER_H
+#ifndef BME280_MOCK_WRAPPER_H
+#define BME280_MOCK_WRAPPER_H
 
 #include <functional>
 #include <memory>
@@ -7,9 +7,9 @@
 #include "bme280.h"
 #include "../driver/i2c_driver.h"
 
-class bme280 {
+class bme280Mock {
  public:
-	bme280(std::shared_ptr<i2c> i2cDev, uint8_t addr) {
+	bme280Mock(std::shared_ptr<i2c> i2cDev, uint8_t addr) {
 		devComms.devAddr = addr;
 		devComms.i2cDev  = i2cDev;
 		// Use BME280 dev's struct to store comms bus info
@@ -18,14 +18,9 @@ class bme280 {
 		bmeDev.write    = writeBytes;
 		bmeDev.delay_us = delayUs;
 		bmeDev.intf     = BME280_I2C_INTF;
-		// Just throw an exception since we dont have
-		// anything to do if the sensor doesn't start
-		int8_t rc = bme280_init(&bmeDev);
-		if (rc != 0) {
-			throw rc;
-		}
+		srand((unsigned int)time(NULL));
 	}
-	~bme280() { ; }
+	~bme280Mock() { ; }
 
 	enum sensorMode_e {
 		sleep  = 0,
@@ -101,6 +96,16 @@ class bme280 {
 	bme280_dev             bmeDev;
 	struct devComms_s      devComms;
 	struct bme280_settings devSettings;
+
+	struct mockReg_s {
+		enum sensorMode_e   mode;
+		enum standbyTime_e  standbyTime;
+		enum filterCoeff_e  filter;
+		enum oversampling_e tempOversampling;
+		enum oversampling_e humidityOversampling;
+		enum oversampling_e pressureOversampling;
+	} mockReg;
+	bme280_data mockOutput;
 };
 
 #endif

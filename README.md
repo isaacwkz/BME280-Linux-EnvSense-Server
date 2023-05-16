@@ -8,6 +8,7 @@
 
 ## Setup
 This runs on Linux and is tested on Orange Pi 5 running Ubuntu
-> Note that you may have to manually enable the I2C interface that is exposed out on the GPIO headers
+> Note that you may have to manually enable the I2C interface that is exposed out on the GPIO headers.
+> 
 > This can be done by patching the device tree
 

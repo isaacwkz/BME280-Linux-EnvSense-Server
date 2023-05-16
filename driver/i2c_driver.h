@@ -2,6 +2,7 @@
 #define I2C_DRIVER_H
 
 #include <string>
+#include <mutex>
 #include <stdint.h>
 
 class i2c {
@@ -19,6 +20,8 @@ class i2c {
 	void        closeDev();
 	std::string i2cFilePath = "/dev/i2c-";
 	int         i2cDevice;
+
+	std::mutex i2c_mutex;
 };
 
 #endif
