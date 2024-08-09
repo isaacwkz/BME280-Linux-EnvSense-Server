@@ -6,11 +6,22 @@
 #include "device/bme280_wrapper.h"
 #include "device/bme280_mock.h"
 
-#define MOCK_SENSOR
+// #define MOCK_SENSOR
 
 static uint8_t i2cDev     = 5;
 static int     serverMode = 0;
 static int     getEnv     = 0;
+
+/* clang-format off */
+void printHelpMessage(void) {
+	std::cout   << "s       | Start HTTP server" << std::endl \
+				<< "p [int] | Use HTTP port number (default: 1337)" << std::endl \
+				<< "d [int] | Use I2C device number (default: 5)" << std::endl \
+				<< "g       | Get sensor data without starting server" << std::endl \
+				<< "t       | Check whether sensor is present on I2C bus" << std::endl \
+				<< "p       | Print help message" << std::endl;
+}
+/* clang-format on */
 
 int checkEnvSensePresent(std::shared_ptr<i2c> bus) {
 	uint8_t data = 0;
@@ -28,6 +39,11 @@ int checkEnvSensePresent(std::shared_ptr<i2c> bus) {
 }
 
 int main(int argc, char **argv) {
+	if (argc < 2) {
+		std::cout << "Missing args!" << std::endl;
+		printHelpMessage();
+		return -1;
+	}
 	int c;
 	while ((c = getopt(argc, argv, ":ghsp:d:t")) != -1) {
 		switch (c) {
@@ -36,6 +52,7 @@ int main(int argc, char **argv) {
 				break;
 			case 'p':
 				httpPort = atoi(optarg);
+				std::cout << "Using port " << httpPort << std::endl;
 				break;
 			case 'd':
 				i2cDev = atoi(optarg);
@@ -51,10 +68,11 @@ int main(int argc, char **argv) {
 				return checkEnvSensePresent(sensorI2c);
 			}
 			case 'h':
-				std::cout << "Print help message here" << std::endl;
-				break;
+				printHelpMessage();
+				return 0;
 			default:
-				std::cout << "Print help message here" << std::endl;
+				std::cout << "Invalid args!" << std::endl;
+				printHelpMessage();
 				return -1;
 		}
 	}
@@ -67,6 +85,14 @@ int main(int argc, char **argv) {
 #else
 	std::shared_ptr<bme280Mock> envSensor0(new bme280Mock{sensorI2c, 0x11});
 #endif
+	envSensor0->setFilter(bme280::filter_2);
+	envSensor0->setOverSampling(bme280::all, bme280::oversampling_1x);
+	envSensor0->setStandbyTime(bme280::standbyTime_0_5ms);
+	envSensor0->setSensorMode(bme280::normal);
+	uint32_t mindelay = envSensor0->calculateMinDelay();
+	std::cout << "Min delay time for current settings(ms): " << (int)mindelay << std::endl;
+	// sleep(mindelay / 1000);
+	sleep(1);
 
 	if (getEnv) {
 		struct bme280_data envData;
@@ -84,6 +110,7 @@ int main(int argc, char **argv) {
 	if (serverMode) {
 		httplib::Server svr;
 		svr.Get(envAllResource, [&](const httplib::Request &req, httplib::Response &res) {
+			(void)req;
 			struct bme280_data envData;
 			struct envPacked_s txData;
 #ifndef MOCK_SENSOR
@@ -94,6 +121,10 @@ int main(int argc, char **argv) {
 			txData.pressure    = envData.pressure;
 			txData.temperature = envData.temperature;
 			txData.humidity    = envData.humidity;
+			// const auto now     = std::chrono::system_clock::now();
+			//  txData.timeTransmited = std::chrono::system_clock::to_time_t(now);
+
+			// std::cout << "Seconds since epoch: " << (long int)txData.timeTransmited << std::endl;
 
 			auto send = msgpack::pack(txData);
 

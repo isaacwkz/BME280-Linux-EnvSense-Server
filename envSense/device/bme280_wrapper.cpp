@@ -12,7 +12,10 @@ BME280_INTF_RET_TYPE bme280::writeBytes(uint8_t reg_addr, const uint8_t *reg_dat
 	return dev->i2cDev->writeBytes(dev->devAddr, reg_addr, len, reg_data);
 }
 
-void bme280::delayUs(uint32_t period, void *intf_ptr) { usleep(period); }
+void bme280::delayUs(uint32_t period, void *intf_ptr) {
+	(void)intf_ptr;
+	usleep(period);
+}
 
 uint8_t bme280::getDevAddr() {
 	struct devComms_s *dev = static_cast<struct devComms_s *>(bmeDev.intf_ptr);
