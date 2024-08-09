@@ -31,3 +31,7 @@ target_link_libraries(envServer PRIVATE i2c-driver bme280-driver)
 add_executable(envClient "${MAIN_DIR}/sensor_client.cpp")
 target_include_directories(envClient PUBLIC ${COMMON_INC})
 target_link_libraries(envClient PRIVATE pthread)
+
+add_executable(envLogger "${MAIN_DIR}/env_logging.cpp")
+target_include_directories(envLogger PUBLIC ${COMMON_INC})
+target_link_libraries(envLogger PRIVATE)
